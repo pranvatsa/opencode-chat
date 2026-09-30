@@ -18,13 +18,15 @@ function resize() {
 
 function submit() {
   const text = value.value.trim()
-  if (!text || props.disabled) return
+  // Never clear the draft unless the parent can actually accept it.
+  if (!text || props.disabled || props.streaming) return
   emit("send", text)
   value.value = ""
   requestAnimationFrame(resize)
 }
 
 function onKeydown(event: KeyboardEvent) {
+  if (event.isComposing || event.keyCode === 229) return
   if (event.key === "Enter" && !event.shiftKey) {
     event.preventDefault()
     submit()
@@ -33,7 +35,7 @@ function onKeydown(event: KeyboardEvent) {
 </script>
 
 <template>
-  <form class="shrink-0 px-4 pb-4" @submit.prevent="submit">
+  <form class="shrink-0 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))]" @submit.prevent="submit">
     <div
       class="mx-auto flex w-full max-w-3xl items-end gap-2 rounded-xl border bg-background p-2 focus-within:ring-1 focus-within:ring-ring"
     >

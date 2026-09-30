@@ -29,12 +29,15 @@ Canonical layout; create each directory as the code lands:
   (`models` proxy, `chat` SSE proxy).
 - `src/layouts/` — Astro page shells (head, theme, PWA meta).
 - `src/components/` — shadcn-vue primitives plus app components (sidebar, chat, composer).
-- `src/lib/` — client helpers (API client, markdown) and server helpers
-  (`upstream.ts` reads env and calls the Go API). D1 queries will live in
-  `src/server/`.
-- `src/middleware.ts` — cross-cutting only: security headers, and Cloudflare
-  Access JWT verification once Access is enabled.
-- `shared/` — types and zod schemas imported by both the UI and the endpoints.
+- `src/lib/` — client helpers (`api.ts`), server helpers (`http.ts`,
+  `upstream.ts` reads env), and local replacements for removed deps. Markdown
+  rendering lives in `src/components/app/MarkdownContent.vue`. D1 queries will
+  live in `src/server/`.
+- `src/middleware.ts` — cross-cutting only: verifies the Cloudflare Access JWT
+  for `/api/*` (fails closed in production when unconfigured) and sets security
+  headers.
+- `shared/` — types shared by the UI and the endpoints. `shared/schemas.ts`
+  (zod) is server-only.
 - The UI calls same-origin `/api/*` only. The Go API key is a Worker secret and
   never reaches the browser.
 

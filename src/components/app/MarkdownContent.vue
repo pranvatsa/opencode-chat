@@ -1,15 +1,37 @@
+<script lang="ts">
+import { marked } from "marked"
+
+// Module scope: runs once, not per component instance.
+marked.setOptions({ gfm: true, breaks: true })
+</script>
+
 <script setup lang="ts">
-import { computed } from "vue"
+import { onUnmounted, ref, watch } from "vue"
 import DOMPurify from "dompurify"
 import { marked } from "marked"
 
+// Parse/sanitize once per animation frame instead of once per streamed token,
+// so a long reply stays smooth.
 const props = defineProps<{ content: string }>()
+const html = ref("")
+let frame = 0
 
-marked.setOptions({ gfm: true, breaks: true })
+function render() {
+  frame = 0
+  html.value = DOMPurify.sanitize(marked.parse(props.content, { async: false }) as string)
+}
 
-const html = computed(() =>
-  DOMPurify.sanitize(marked.parse(props.content, { async: false }) as string),
+watch(
+  () => props.content,
+  () => {
+    if (!frame) frame = requestAnimationFrame(render)
+  },
+  { immediate: true },
 )
+
+onUnmounted(() => {
+  if (frame) cancelAnimationFrame(frame)
+})
 </script>
 
 <template>

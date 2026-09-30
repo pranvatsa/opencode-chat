@@ -1,11 +1,9 @@
 import type { Message, Thread } from "@shared/types"
 import type {
-  ApiErrorBody,
   ApiErrorCode,
   ChatApi,
+  ChatRequest,
   CreateThreadInput,
-  ListThreadsParams,
-  Paginated,
   UpdateThreadInput,
 } from "@shared/api"
 import { MOCK_MESSAGES, MOCK_THREADS } from "./mock"
@@ -14,15 +12,10 @@ export class ApiError extends Error {
   constructor(
     readonly code: ApiErrorCode,
     message: string,
-    readonly status: number,
-    readonly details?: unknown,
+    readonly status = 500,
   ) {
     super(message)
     this.name = "ApiError"
-  }
-
-  toBody(): ApiErrorBody {
-    return { error: { code: this.code, message: this.message, details: this.details } }
   }
 }
 
@@ -40,29 +33,14 @@ function createStore() {
 const store = createStore()
 
 /**
- * Temporary client-side implementation of `ChatApi`. Threads live in memory
- * until D1 lands; `streamReply` already talks to the real `/api/chat` proxy.
+ * Temporary client-side `ChatApi`. Threads live in memory until D1 lands;
+ * `streamReply` already talks to the real `/api/chat` proxy.
  */
 export function createMockApi(): ChatApi {
   return {
-    async listThreads(input: ListThreadsParams = {}): Promise<Paginated<Thread>> {
-      const page = input.page ?? 1
-      const pageSize = input.pageSize ?? 50
-      const query = input.q?.trim().toLowerCase()
+    async listThreads(): Promise<Thread[]> {
       await sleep(140)
-      const matching = query
-        ? store.threads.filter((thread) => thread.title.toLowerCase().includes(query))
-        : store.threads
-      const start = (page - 1) * pageSize
-      return {
-        data: matching.slice(start, start + pageSize),
-        pagination: {
-          page,
-          pageSize,
-          totalItems: matching.length,
-          totalPages: Math.max(1, Math.ceil(matching.length / pageSize)),
-        },
-      }
+      return [...store.threads]
     },
 
     async createThread(input: CreateThreadInput): Promise<Thread> {
@@ -99,11 +77,11 @@ export function createMockApi(): ChatApi {
       delete store.messages[id]
     },
 
-    async listMessages(threadId: string): Promise<{ data: Message[] }> {
+    async listMessages(threadId: string): Promise<Message[]> {
       await sleep(90)
       const stored = store.messages[threadId]
       if (!stored) throw new ApiError("NOT_FOUND", "Chat not found.", 404)
-      return { data: [...stored] }
+      return [...stored]
     },
 
     async appendMessage(threadId: string, content: string): Promise<Message> {
@@ -126,46 +104,58 @@ export function createMockApi(): ChatApi {
         .map((message) => ({ role: message.role, content: message.content }))
       if (!messages.length) throw new ApiError("CONFLICT", "No message to reply to.", 409)
 
+      const body: ChatRequest = { model: thread.model, session: threadId, messages }
+
       let response: Response
       try {
         response = await fetch("/api/chat", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ model: thread.model, session: threadId, messages }),
+          body: JSON.stringify(body),
           signal,
         })
-      } catch {
-        throw new ApiError("UPSTREAM_ERROR", "Could not reach the model.", 502)
+      } catch (cause) {
+        // Aborts are a normal stop, not a failure — let the caller see them.
+        if (signal?.aborted) throw cause
+        throw new ApiError("UPSTREAM_ERROR", "Could not reach the model.")
       }
 
       if (!response.ok || !response.body) {
-        const detail = await response.text().catch(() => "")
-        throw new ApiError("UPSTREAM_ERROR", `Model request failed (${response.status}).`, 502, detail.slice(0, 500))
+        throw new ApiError("UPSTREAM_ERROR", `Model request failed (${response.status}).`, 502)
+      }
+
+      const emit = (event: string) => {
+        for (const line of event.split("\n")) {
+          if (!line.startsWith("data:")) continue
+          const payload = line.slice(5).trim()
+          if (payload === "[DONE]") continue
+          try {
+            const delta = JSON.parse(payload).choices?.[0]?.delta?.content
+            if (typeof delta === "string" && delta) onDelta(delta)
+          } catch {
+            // keepalives and partial frames
+          }
+        }
       }
 
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
       let buffer = ""
-      for (;;) {
-        const { value, done } = await reader.read()
-        if (done) break
-        buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n")
-        let index: number
-        while ((index = buffer.indexOf("\n\n")) !== -1) {
-          const event = buffer.slice(0, index)
-          buffer = buffer.slice(index + 2)
-          for (const line of event.split("\n")) {
-            if (!line.startsWith("data:")) continue
-            const payload = line.slice(5).trim()
-            if (payload === "[DONE]") continue
-            try {
-              const delta = JSON.parse(payload).choices?.[0]?.delta?.content
-              if (typeof delta === "string" && delta) onDelta(delta)
-            } catch {
-              // keepalives and partial frames
-            }
+      try {
+        for (;;) {
+          const { value, done } = await reader.read()
+          if (done) break
+          buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n")
+          let index: number
+          while ((index = buffer.indexOf("\n\n")) !== -1) {
+            emit(buffer.slice(0, index))
+            buffer = buffer.slice(index + 2)
           }
         }
+        buffer += decoder.decode()
+        if (buffer.trim()) emit(buffer)
+      } finally {
+        reader.cancel().catch(() => {})
       }
     },
   }

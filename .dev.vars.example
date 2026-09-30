@@ -5,5 +5,10 @@
 OPENCODE_GO_API_KEY="replace-me"
 
 # Optional: override the upstream base (default https://opencode.ai/zen/go/v1).
-# Point this at a local mock to develop without a key.
 # OPENCODE_GO_BASE_URL="http://127.0.0.1:9099/v1"
+
+# Cloudflare Access. Required in production: without these the server refuses
+# /api/* (fails closed). Set the hostname (e.g. team.cloudflareaccess.com) and
+# the Access application's AUD tag. Local dev skips the check when these are unset.
+# CF_ACCESS_TEAM_DOMAIN="yourteam.cloudflareaccess.com"
+# CF_ACCESS_AUD="your-access-app-aud"

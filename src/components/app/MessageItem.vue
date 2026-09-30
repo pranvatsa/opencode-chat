@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue"
+import { onUnmounted, ref } from "vue"
 import { Check, Copy } from "@/components/icons"
 import type { Message } from "@shared/types"
 import { Button } from "@/components/ui/button"
@@ -7,16 +7,20 @@ import MarkdownContent from "./MarkdownContent.vue"
 
 const props = defineProps<{ message: Message }>()
 const copied = ref(false)
+let timer: ReturnType<typeof setTimeout> | undefined
 
 async function copy() {
   try {
     await navigator.clipboard.writeText(props.message.content)
     copied.value = true
-    setTimeout(() => (copied.value = false), 1500)
+    clearTimeout(timer)
+    timer = setTimeout(() => (copied.value = false), 1500)
   } catch {
     copied.value = false
   }
 }
+
+onUnmounted(() => clearTimeout(timer))
 </script>
 
 <template>

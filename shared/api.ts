@@ -20,22 +20,6 @@ export interface ApiErrorBody {
   }
 }
 
-export interface Paginated<T> {
-  data: T[]
-  pagination: {
-    page: number
-    pageSize: number
-    totalItems: number
-    totalPages: number
-  }
-}
-
-export interface ListThreadsParams {
-  q?: string
-  page?: number
-  pageSize?: number
-}
-
 export interface CreateThreadInput {
   model: string
   title?: string
@@ -59,14 +43,15 @@ export interface ChatRequest {
 
 /**
  * The UI codes against this contract. The mock implements it now; the Worker
- * implements the same surface later, so swapping is a one-file change.
+ * implements the same surface later, so swapping is a one-file change. Keep it
+ * to what the app actually uses — every field is a promise. See Hyrum's Law.
  */
 export interface ChatApi {
-  listThreads(params?: ListThreadsParams): Promise<Paginated<Thread>>
+  listThreads(): Promise<Thread[]>
   createThread(input: CreateThreadInput): Promise<Thread>
   updateThread(id: string, input: UpdateThreadInput): Promise<Thread>
   deleteThread(id: string): Promise<void>
-  listMessages(threadId: string): Promise<{ data: Message[] }>
+  listMessages(threadId: string): Promise<Message[]>
   appendMessage(threadId: string, content: string): Promise<Message>
   streamReply(
     threadId: string,

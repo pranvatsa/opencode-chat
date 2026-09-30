@@ -17,4 +17,4 @@ npm run deploy   # build, then wrangler deploy
 
 Astro · Vue · Tailwind · shadcn-vue · Cloudflare Workers (D1, Access).
 
-Status: scaffold. UI under construction.
+Status: chat UI + real model proxy. Threads are in-memory until D1 lands.

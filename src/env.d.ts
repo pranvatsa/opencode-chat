@@ -3,3 +3,9 @@
 declare module "cloudflare:workers" {
   export const env: Record<string, unknown>
 }
+
+declare namespace App {
+  interface Locals {
+    user?: { email?: string }
+  }
+}

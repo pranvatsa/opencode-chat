@@ -1,11 +1,4 @@
-import type { Message, Model, Thread } from "@shared/types"
-
-export const MODELS: Model[] = [
-  { id: "deepseek-v4.1-flash", label: "DeepSeek V4.1 Flash" },
-  { id: "glm-5.3", label: "GLM-5.3" },
-  { id: "kimi-k2.7-code", label: "Kimi K2.7 Code" },
-  { id: "qwen3.8-flash", label: "Qwen3.8 Flash" },
-]
+import type { Message, Thread } from "@shared/types"
 
 const MINUTE = 60_000
 const HOUR = 60 * MINUTE
@@ -40,36 +33,4 @@ export const MOCK_MESSAGES: Record<string, Message[]> = {
     { id: "m5", role: "user", content: "Give me a few repo names that aren't cringe.", createdAt: now - 4 * 24 * HOUR },
     { id: "m6", role: "assistant", content: "`opencode-chat`, `flarechat`, `zenchat`. I'd take the first — it says what it is.", createdAt: now - 4 * 24 * HOUR + 1000 },
   ],
-}
-
-const TEMPLATE = `Here is a quick take.
-
-## What I'd do
-- Start with the smallest version that works
-- Keep the seams clean so it can grow
-- Ship it, then iterate
-
-\`\`\`ts
-type Thread = {
-  id: string
-  title: string
-  model: string
-}
-\`\`\`
-
-Want me to go deeper on any of these?`
-
-export interface StreamOptions {
-  signal?: AbortSignal
-  onDelta: (chunk: string) => void
-}
-
-export async function streamMockReply(prompt: string, { signal, onDelta }: StreamOptions): Promise<void> {
-  const text = `You said “${prompt.trim()}”.\n\n${TEMPLATE}`
-  const tokens = text.match(/\s+|\S+/g) ?? []
-  for (const token of tokens) {
-    if (signal?.aborted) return
-    onDelta(token)
-    await new Promise((resolve) => setTimeout(resolve, 10))
-  }
 }

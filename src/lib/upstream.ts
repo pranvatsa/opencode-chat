@@ -1,4 +1,4 @@
-import { env as workerEnv } from "cloudflare:workers"
+import { env } from "cloudflare:workers"
 
 export interface Upstream {
   key?: string
@@ -11,7 +11,6 @@ export interface Upstream {
  * leaves the server.
  */
 export function upstream(): Upstream {
-  const env = workerEnv as unknown as Record<string, unknown>
   const key = typeof env.OPENCODE_GO_API_KEY === "string" ? env.OPENCODE_GO_API_KEY : undefined
   const raw = typeof env.OPENCODE_GO_BASE_URL === "string" ? env.OPENCODE_GO_BASE_URL : "https://opencode.ai/zen/go/v1"
   return { key, base: raw.replace(/\/+$/, "") }

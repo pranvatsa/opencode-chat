@@ -2,7 +2,7 @@
 import { computed, nextTick, ref, watch } from "vue"
 import { ChevronDown, Menu, MessageSquare, TriangleAlert } from "@/components/icons"
 import type { Message, Thread } from "@shared/types"
-import { MODELS } from "@/lib/mock"
+import { MODELS } from "@/lib/models"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -34,15 +34,30 @@ const modelLabel = computed(() => {
   const id = props.thread?.model
   return MODELS.find((model) => model.id === id)?.label ?? id ?? ""
 })
+const status = computed(() => (props.streaming ? "Assistant is responding" : ""))
+
+function scrollToBottom() {
+  const node = scroller.value
+  if (node) node.scrollTop = node.scrollHeight
+}
 
 watch(
-  () => props.messages.reduce((total, message) => total + message.content.length, 0),
+  () => props.thread?.id,
+  async () => {
+    await nextTick()
+    scrollToBottom()
+  },
+)
+
+// Follow the stream only when the reader is already near the bottom.
+watch(
+  () => [props.messages.length, props.messages.at(-1)?.content.length ?? 0],
   async () => {
     await nextTick()
     const node = scroller.value
-    if (node) node.scrollTop = node.scrollHeight
+    if (!node) return
+    if (node.scrollHeight - node.scrollTop - node.clientHeight < 80) scrollToBottom()
   },
-  { immediate: true },
 )
 </script>
 
@@ -70,19 +85,26 @@ watch(
     </header>
 
     <div ref="scroller" class="min-h-0 flex-1 overflow-y-auto">
-      <div v-if="loading" class="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6" aria-busy="true" aria-label="Loading">
-        <Skeleton class="h-4 w-16" />
-        <Skeleton class="h-4 w-4/5" />
-        <Skeleton class="h-4 w-3/5" />
-      </div>
+      <p class="sr-only" role="status">{{ status }}</p>
 
       <div
-        v-else-if="error"
+        v-if="error"
         role="alert"
-        class="mx-auto mt-6 flex w-full max-w-3xl items-start gap-3 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+        class="mx-auto mt-4 flex w-full max-w-3xl items-start gap-3 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive"
       >
         <TriangleAlert class="mt-0.5 size-4 shrink-0" />
         <p>{{ error }}</p>
+      </div>
+
+      <div
+        v-if="loading"
+        class="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 py-6"
+        aria-busy="true"
+        aria-label="Loading messages"
+      >
+        <Skeleton class="h-4 w-16" />
+        <Skeleton class="h-4 w-4/5" />
+        <Skeleton class="h-4 w-3/5" />
       </div>
 
       <div v-else-if="!thread" class="flex h-full items-center justify-center p-8 text-sm text-muted-foreground">
@@ -97,7 +119,7 @@ watch(
         </div>
       </div>
 
-      <div v-else class="py-2">
+      <div v-else class="py-2" role="log" :aria-busy="streaming">
         <MessageItem v-for="message in messages" :key="message.id" :message="message" />
       </div>
     </div>

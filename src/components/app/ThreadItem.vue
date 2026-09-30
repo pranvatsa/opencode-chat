@@ -29,7 +29,8 @@ async function startRename() {
 function commitRename() {
   if (!editing.value) return
   editing.value = false
-  emit("rename", draft.value)
+  const next = draft.value.trim()
+  if (next && next !== props.thread.title) emit("rename", next)
 }
 </script>
 
@@ -68,7 +69,7 @@ function commitRename() {
           <Button
             variant="ghost"
             size="icon-xs"
-            class="absolute top-1/2 right-1 -translate-y-1/2 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+            class="absolute top-1/2 right-1 -translate-y-1/2 opacity-100 transition-opacity focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100"
             :aria-label="`Actions for ${thread.title}`"
             @click.stop
           >
