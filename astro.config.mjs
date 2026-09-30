@@ -1,3 +1,4 @@
+import { fileURLToPath, URL } from "node:url"
 import { defineConfig } from "astro/config"
 import cloudflare from "@astrojs/cloudflare"
 import vue from "@astrojs/vue"
@@ -9,5 +10,11 @@ export default defineConfig({
   integrations: [vue()],
   vite: {
     plugins: [tailwindcss()],
+    resolve: {
+      alias: {
+        "@": fileURLToPath(new URL("./src", import.meta.url)),
+        "@shared": fileURLToPath(new URL("./shared", import.meta.url)),
+      },
+    },
   },
 })

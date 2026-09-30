@@ -1,18 +1,8 @@
 ---
-import "../styles/global.css"
+import Base from "../layouts/Base.astro"
+import AppShell from "@/components/app/AppShell.vue"
 ---
 
-<!doctype html>
-<html lang="en" class="dark">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>opencode-chat</title>
-  </head>
-  <body class="bg-neutral-950 text-neutral-100 antialiased">
-    <main class="mx-auto max-w-2xl p-8">
-      <h1 class="text-xl font-semibold">opencode-chat</h1>
-      <p class="mt-1 text-neutral-400">Scaffold is up.</p>
-    </main>
-  </body>
-</html>
+<Base>
+  <AppShell client:only="vue" />
+</Base>

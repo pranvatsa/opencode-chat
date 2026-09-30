@@ -50,9 +50,10 @@ Canonical layout; create each directory as the code lands:
 
 ## Non-obvious constraints
 
-- Tailwind 4 dark mode is `prefers-color-scheme` by default. The class strategy
-  needs `@custom-variant dark (&:where(.dark, .dark *));` in
-  `src/styles/global.css`; until then `<html class="dark">` does nothing.
+- Dark mode is class-driven: `src/styles/global.css` sets
+  `@custom-variant dark (&:is(.dark *));` and `<html class="dark">` in
+  `src/layouts/Base.astro` turns it on. Drop the variant to fall back to
+  `prefers-color-scheme`.
 - `imageService: "passthrough"` in `astro.config.mjs` is deliberate. The default
   turns on the Cloudflare Images binding, which can cost money. Do not revert it.
 - `wrangler` runs against the adapter-generated `dist/server/wrangler.json`, so
