@@ -8,6 +8,27 @@ export default defineConfig({
   output: "server",
   adapter: cloudflare({ imageService: "passthrough" }),
   integrations: [vue()],
+  // Astro emits a `<meta>` CSP with hashes for its own inline scripts/styles.
+  // Header-only directives (frame-ancestors) live in src/middleware.ts.
+  security: {
+    csp: {
+      directives: [
+        "default-src 'self'",
+        "base-uri 'self'",
+        "object-src 'none'",
+        "frame-ancestors 'none'",
+        "form-action 'self'",
+        "img-src 'self' data:",
+        "connect-src 'self'",
+        "font-src 'self' https://fonts.gstatic.com",
+      ],
+      styleDirective: {
+        // reka-ui positions menus/tooltips with inline styles, so style-src
+        // needs 'unsafe-inline'. script-src stays hash-locked.
+        resources: ["'self'", "https://fonts.googleapis.com", "'unsafe-inline'"],
+      },
+    },
+  },
   vite: {
     plugins: [tailwindcss()],
     resolve: {

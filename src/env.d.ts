@@ -16,5 +16,7 @@ declare namespace Cloudflare {
 declare namespace App {
   interface Locals {
     user?: { email?: string }
+    /** Workers execution context, provided by the Cloudflare adapter. */
+    cfContext?: ExecutionContext
   }
 }

@@ -69,6 +69,6 @@ const filtered = computed(() => {
       </nav>
     </ScrollArea>
 
-    <div class="border-t px-3 py-2 text-xs text-muted-foreground">Live model · chats not saved yet</div>
+    <div class="border-t px-3 py-2 text-xs text-muted-foreground">Saved in your Cloudflare account</div>
   </aside>
 </template>

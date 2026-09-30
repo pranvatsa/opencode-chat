@@ -9,6 +9,7 @@ OPENCODE_GO_API_KEY="replace-me"
 
 # Cloudflare Access. Required in production: without these the server refuses
 # /api/* (fails closed). Set the hostname (e.g. team.cloudflareaccess.com) and
-# the Access application's AUD tag. Local dev skips the check when these are unset.
+# the Access application's AUD tag. `astro dev` skips the check; `npm run
+# preview` runs a production build, so /api/* returns 500 without these.
 # CF_ACCESS_TEAM_DOMAIN="yourteam.cloudflareaccess.com"
 # CF_ACCESS_AUD="your-access-app-aud"

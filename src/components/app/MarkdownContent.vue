@@ -10,28 +10,34 @@ import { onUnmounted, ref, watch } from "vue"
 import DOMPurify from "dompurify"
 import { marked } from "marked"
 
-// Parse/sanitize once per animation frame instead of once per streamed token,
-// so a long reply stays smooth.
+// Parse/sanitize on a leading-edge throttle so streaming stays smooth without
+// waiting on the first paint.
+const THROTTLE_MS = 120
+const SANITIZE = { FORBID_ATTR: ["style"] }
+
 const props = defineProps<{ content: string }>()
 const html = ref("")
-let frame = 0
+let lastRender = 0
+let timer: ReturnType<typeof setTimeout> | undefined
 
 function render() {
-  frame = 0
-  html.value = DOMPurify.sanitize(marked.parse(props.content, { async: false }) as string)
+  if (timer) {
+    clearTimeout(timer)
+    timer = undefined
+  }
+  lastRender = Date.now()
+  html.value = DOMPurify.sanitize(marked.parse(props.content, { async: false }) as string, SANITIZE)
 }
 
-watch(
-  () => props.content,
-  () => {
-    if (!frame) frame = requestAnimationFrame(render)
-  },
-  { immediate: true },
-)
+function schedule() {
+  if (timer) return
+  const wait = THROTTLE_MS - (Date.now() - lastRender)
+  if (wait <= 0) render()
+  else timer = setTimeout(render, wait)
+}
 
-onUnmounted(() => {
-  if (frame) cancelAnimationFrame(frame)
-})
+watch(() => props.content, schedule, { immediate: true })
+onUnmounted(() => clearTimeout(timer))
 </script>
 
 <template>

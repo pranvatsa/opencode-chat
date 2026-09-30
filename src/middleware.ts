@@ -5,7 +5,10 @@ import { env } from "cloudflare:workers"
 import { jsonError } from "@/lib/http"
 
 // Cross-cutting concerns only. Auth lives here so every endpoint inherits it.
+// The CSP is emitted by the Cloudflare adapter from Astro's `security.csp`
+// config (see astro.config.mjs); do not set it here or it will be clobbered.
 const SECURITY_HEADERS: Record<string, string> = {
+  "strict-transport-security": "max-age=15552000",
   "x-content-type-options": "nosniff",
   "x-frame-options": "DENY",
   "referrer-policy": "strict-origin-when-cross-origin",
@@ -32,9 +35,8 @@ function keySet(teamDomain: string) {
 async function requireAuth(context: APIContext): Promise<Response | null> {
   if (!context.url.pathname.startsWith("/api/")) return null
 
-  const environment = env
-  const teamDomain = typeof environment.CF_ACCESS_TEAM_DOMAIN === "string" ? environment.CF_ACCESS_TEAM_DOMAIN : undefined
-  const audience = typeof environment.CF_ACCESS_AUD === "string" ? environment.CF_ACCESS_AUD : undefined
+  const teamDomain = typeof env.CF_ACCESS_TEAM_DOMAIN === "string" ? env.CF_ACCESS_TEAM_DOMAIN : undefined
+  const audience = typeof env.CF_ACCESS_AUD === "string" ? env.CF_ACCESS_AUD : undefined
 
   if (!teamDomain || !audience) {
     return import.meta.env.DEV
@@ -45,21 +47,29 @@ async function requireAuth(context: APIContext): Promise<Response | null> {
   const assertion = context.request.headers.get("Cf-Access-Jwt-Assertion")
   if (!assertion) return jsonError("UNAUTHORIZED", "Authentication required.", 401)
 
+  let owner: string
   try {
     const { payload } = await jwtVerify(assertion, keySet(teamDomain), {
       issuer: `https://${teamDomain}`,
       audience,
     })
+    // Access JWTs always carry `sub`; require it so the rate-limit key can never
+    // collapse into one shared bucket.
+    const subject = payload.sub ?? (typeof payload.email === "string" ? payload.email : undefined)
+    if (typeof subject !== "string" || subject === "") {
+      return jsonError("UNAUTHORIZED", "Token is missing a subject.", 401)
+    }
+    owner = subject
     context.locals.user = { email: typeof payload.email === "string" ? payload.email : undefined }
   } catch {
     return jsonError("UNAUTHORIZED", "Invalid credentials.", 401)
   }
 
-  // Expensive route: throttle per user. Best-effort — never block on limiter
-  // trouble.
+  // Expensive route: throttle per identity. Best-effort — never block on
+  // limiter trouble.
   if (context.url.pathname === "/api/chat") {
     try {
-      const { success } = await env.CHAT_RATE_LIMITER.limit({ key: context.locals.user?.email ?? "anonymous" })
+      const { success } = await env.CHAT_RATE_LIMITER.limit({ key: owner })
       if (!success) return jsonError("RATE_LIMITED", "Too many requests. Slow down.", 429)
     } catch (cause) {
       console.error("rate limiter unavailable", cause)
@@ -70,8 +80,18 @@ async function requireAuth(context: APIContext): Promise<Response | null> {
 }
 
 export const onRequest = defineMiddleware(async (context, next) => {
-  const denial = await requireAuth(context)
-  const response = denial ?? (await next())
+  let response: Response
+  try {
+    const denial = await requireAuth(context)
+    response = denial ?? (await next())
+  } catch (cause) {
+    // One catch-all keeps every /api error in the documented shape.
+    console.error("unhandled request error", cause)
+    response = context.url.pathname.startsWith("/api/")
+      ? jsonError("INTERNAL", "Something went wrong.", 500)
+      : new Response("Internal Server Error", { status: 500 })
+  }
+
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
     response.headers.set(name, value)
   }

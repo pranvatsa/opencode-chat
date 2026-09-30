@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onUnmounted, ref } from "vue"
-import { Check, Copy } from "@/components/icons"
+import { CheckIcon, Copy } from "@/components/icons"
 import type { Message } from "@shared/types"
 import { Button } from "@/components/ui/button"
 import MarkdownContent from "./MarkdownContent.vue"
@@ -37,7 +37,7 @@ onUnmounted(() => clearTimeout(timer))
         aria-label="Copy message"
         @click="copy"
       >
-        <Check v-if="copied" class="size-3.5" />
+        <CheckIcon v-if="copied" class="size-3.5" />
         <Copy v-else class="size-3.5" />
       </Button>
     </div>

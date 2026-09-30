@@ -91,11 +91,18 @@ export async function listMessages(threadId: string): Promise<Message[]> {
   return results.map(toMessage)
 }
 
-export async function appendMessage(threadId: string, role: Role, content: string): Promise<void> {
+/** Returns the new message id so a failed turn can be rolled back. */
+export async function appendMessage(threadId: string, role: Role, content: string): Promise<string> {
+  const id = crypto.randomUUID()
   const now = Date.now()
   await env.DB.batch([
     env.DB.prepare("INSERT INTO messages (id, thread_id, role, content, created_at) VALUES (?, ?, ?, ?, ?)")
-      .bind(crypto.randomUUID(), threadId, role, content, now),
+      .bind(id, threadId, role, content, now),
     env.DB.prepare("UPDATE threads SET updated_at = ? WHERE id = ?").bind(now, threadId),
   ])
+  return id
+}
+
+export async function deleteMessage(id: string): Promise<void> {
+  await env.DB.prepare("DELETE FROM messages WHERE id = ?").bind(id).run()
 }

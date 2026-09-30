@@ -1,7 +1,7 @@
 import type { Message, Model, Thread } from "./types"
 
 /** Every error response uses this shape. See api-and-interface-design. */
-export const API_ERROR_CODES = [
+const API_ERROR_CODES = [
   "VALIDATION_ERROR",
   "UNAUTHORIZED",
   "RATE_LIMITED",

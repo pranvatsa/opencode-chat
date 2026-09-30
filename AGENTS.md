@@ -40,8 +40,8 @@ Spec and plans live in `../.plans/opencode-chat/` and are never committed.
 Canonical layout; create each directory as the code lands:
 
 - `src/pages/` — Astro routes; `src/pages/api/` files are the Worker API
-  (`models` proxy, `chat` SSE proxy).
-- `src/layouts/` — Astro page shells (head, theme, PWA meta).
+  (`models` proxy, `chat` SSE proxy, `threads` CRUD backed by `src/server/threads.ts`).
+- `src/layouts/` — Astro page shells (head, theme).
 - `src/components/` — shadcn-vue primitives plus app components (sidebar, chat, composer).
 - `src/lib/` — client helpers (`api.ts`), server helpers (`http.ts`,
   `upstream.ts` reads env), and local replacements for removed deps. Markdown
@@ -54,8 +54,9 @@ Canonical layout; create each directory as the code lands:
   (zod) is server-only.
 - `migrations/` — D1 schema. Apply locally with
   `npx wrangler d1 migrations apply opencode-chat --local`.
-- `POST /api/chat` loads history from D1, persists the user message, streams the
-  reply, and persists the assistant message when the stream ends.
+- `POST /api/chat` loads a bounded window of history from D1, persists the user
+  message (rolling it back if upstream fails), streams the reply, and records the
+  assistant message even when the client stops mid-stream.
 - The UI calls same-origin `/api/*` only. The Go API key is a Worker secret and
   never reaches the browser.
 
@@ -101,6 +102,15 @@ Canonical layout; create each directory as the code lands:
 - Sanitize model output with DOMPurify before rendering. Never `v-html`
   unsanitized content.
 - Validate every endpoint input with zod.
+- The page CSP is emitted by the Cloudflare adapter from `security.csp` in
+  `astro.config.mjs`. Do **not** set a `content-security-policy` header in
+  middleware — it clobbers the adapter's hashed policy and breaks hydration.
+  `style-src` allows `'unsafe-inline'` (reka-ui positions menus inline);
+  `script-src` stays hash-locked.
+- SSE parsing is shared in `src/lib/sse.ts`. Change it there, not at the call
+  sites.
+- Threads are not scoped to an owner. Fine for a single-user Access policy; add
+  an owner column before widening the policy to more emails.
 
 ## Boundaries
 

@@ -1,6 +1,7 @@
 import type { Message, Model, Thread } from "@shared/types"
 import type { ApiErrorBody, ApiErrorCode, ChatApi, ChatRequest } from "@shared/api"
 import { labelFor } from "./models"
+import { contentFromSseFrame } from "./sse"
 
 export class ApiError extends Error {
   constructor(
@@ -43,14 +44,8 @@ function jsonInit(method: string, body?: unknown): RequestInit {
 export function createApi(): ChatApi {
   return {
     async listModels(): Promise<Model[]> {
-      const body = await request<{ data?: Array<{ id?: string } | string> } | Array<{ id?: string }>>(
-        "/api/models",
-      )
-      const items = Array.isArray(body) ? body : (body.data ?? [])
-      return items
-        .map((item) => (typeof item === "string" ? item : (item?.id ?? "")))
-        .filter((id): id is string => Boolean(id))
-        .map((id) => ({ id, label: labelFor(id) }))
+      const { data } = await request<{ data: string[] }>("/api/models")
+      return data.map((id) => ({ id, label: labelFor(id) }))
     },
     listThreads: () => request<Thread[]>("/api/threads"),
     createThread: (input) => request<Thread>("/api/threads", jsonInit("POST", input)),
@@ -74,20 +69,6 @@ export function createApi(): ChatApi {
         throw new ApiError("UPSTREAM_ERROR", `Model request failed (${response.status}).`, 502)
       }
 
-      const emit = (event: string) => {
-        for (const line of event.split("\n")) {
-          if (!line.startsWith("data:")) continue
-          const payload = line.slice(5).trim()
-          if (payload === "[DONE]") continue
-          try {
-            const delta = JSON.parse(payload).choices?.[0]?.delta?.content
-            if (typeof delta === "string" && delta) onDelta(delta)
-          } catch {
-            // keepalives and partial frames
-          }
-        }
-      }
-
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
       let buffer = ""
@@ -98,12 +79,16 @@ export function createApi(): ChatApi {
           buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n")
           let index: number
           while ((index = buffer.indexOf("\n\n")) !== -1) {
-            emit(buffer.slice(0, index))
+            const delta = contentFromSseFrame(buffer.slice(0, index))
+            if (delta) onDelta(delta)
             buffer = buffer.slice(index + 2)
           }
         }
         buffer += decoder.decode()
-        if (buffer.trim()) emit(buffer)
+        if (buffer.trim()) {
+          const delta = contentFromSseFrame(buffer)
+          if (delta) onDelta(delta)
+        }
       } finally {
         reader.cancel().catch(() => {})
       }

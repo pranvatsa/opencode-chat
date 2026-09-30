@@ -13,7 +13,6 @@ export function reactiveOmit<T extends object, K extends keyof T>(
 }
 
 export interface VModelOptions<T> {
-  passive?: boolean
   defaultValue?: T
 }
 

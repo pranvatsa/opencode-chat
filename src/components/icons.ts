@@ -1,8 +1,8 @@
 import { h, type FunctionalComponent } from "vue"
 
-type Node = [string, Record<string, string | number>]
+type NodeSpec = [string, Record<string, string | number>]
 
-function icon(nodes: Node[]): FunctionalComponent {
+function icon(nodes: NodeSpec[]): FunctionalComponent {
   return (_props, { attrs }) =>
     h(
       "svg",
@@ -22,10 +22,10 @@ function icon(nodes: Node[]): FunctionalComponent {
     )
 }
 
-export const X = icon([["path", { d: "M18 6 6 18" }], ["path", { d: "m6 6 12 12" }]])
-export const Check = icon([["path", { d: "M20 6 9 17l-5-5" }]])
+export const XIcon = icon([["path", { d: "M18 6 6 18" }], ["path", { d: "m6 6 12 12" }]])
+export const CheckIcon = icon([["path", { d: "M20 6 9 17l-5-5" }]])
 export const ChevronDown = icon([["path", { d: "m6 9 6 6 6-6" }]])
-export const ChevronRight = icon([["path", { d: "m9 18 6-6-6-6" }]])
+export const ChevronRightIcon = icon([["path", { d: "m9 18 6-6-6-6" }]])
 export const Menu = icon([
   ["path", { d: "M4 12h16" }],
   ["path", { d: "M4 6h16" }],
@@ -66,8 +66,3 @@ export const Search = icon([
   ["circle", { cx: 11, cy: 11, r: 8 }],
   ["path", { d: "m21 21-4.3-4.3" }],
 ])
-
-// Names used by the vendored components.
-export const XIcon = X
-export const CheckIcon = Check
-export const ChevronRightIcon = ChevronRight

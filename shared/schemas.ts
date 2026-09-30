@@ -26,5 +26,3 @@ export const ChatRequestSchema = z.object({
   threadId: z.string().regex(ID, "invalid thread id"),
   text: z.string().trim().min(1).max(24000),
 })
-
-export type ChatRequestInput = z.infer<typeof ChatRequestSchema>
