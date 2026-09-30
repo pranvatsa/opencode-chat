@@ -1,4 +1,3 @@
-import { z } from "zod"
 import type { Message, Thread } from "./types"
 
 /** Every error response uses this shape. See api-and-interface-design. */
@@ -31,33 +30,32 @@ export interface Paginated<T> {
   }
 }
 
-export const ListThreadsParamsSchema = z.object({
-  q: z.string().trim().optional(),
-  page: z.number().int().min(1).default(1),
-  pageSize: z.number().int().min(1).max(100).default(50),
-})
-export type ListThreadsParams = z.input<typeof ListThreadsParamsSchema>
+export interface ListThreadsParams {
+  q?: string
+  page?: number
+  pageSize?: number
+}
 
-export const CreateThreadInputSchema = z.object({
-  model: z.string().min(1),
-  title: z.string().trim().min(1).max(120).optional(),
-})
-export type CreateThreadInput = z.infer<typeof CreateThreadInputSchema>
+export interface CreateThreadInput {
+  model: string
+  title?: string
+}
 
-export const UpdateThreadInputSchema = z
-  .object({
-    title: z.string().trim().min(1).max(120).optional(),
-    model: z.string().min(1).optional(),
-  })
-  .refine((value) => value.title !== undefined || value.model !== undefined, {
-    message: "provide at least one field to update",
-  })
-export type UpdateThreadInput = z.infer<typeof UpdateThreadInputSchema>
+export interface UpdateThreadInput {
+  title?: string
+  model?: string
+}
 
-export const AppendMessageInputSchema = z.object({
-  content: z.string().trim().min(1).max(8000),
-})
-export type AppendMessageInput = z.infer<typeof AppendMessageInputSchema>
+export interface ChatMessage {
+  role: "user" | "assistant"
+  content: string
+}
+
+export interface ChatRequest {
+  model: string
+  session: string
+  messages: ChatMessage[]
+}
 
 /**
  * The UI codes against this contract. The mock implements it now; the Worker

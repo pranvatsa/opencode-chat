@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue"
-import { Plus, Search } from "@lucide/vue"
+import { Plus, Search } from "@/components/icons"
 import type { Thread } from "@shared/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -30,7 +30,7 @@ const filtered = computed(() => {
       <Button
         variant="ghost"
         size="icon"
-        class="ml-auto size-8"
+        class="ml-auto"
         aria-label="New chat"
         @click="emit('create')"
       >
@@ -69,6 +69,6 @@ const filtered = computed(() => {
       </nav>
     </ScrollArea>
 
-    <div class="border-t px-3 py-2 text-xs text-muted-foreground">Mock data · UI preview</div>
+    <div class="border-t px-3 py-2 text-xs text-muted-foreground">Live model · chats not saved yet</div>
   </aside>
 </template>

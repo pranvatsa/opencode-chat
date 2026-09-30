@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { nextTick, ref } from "vue"
-import { MoreHorizontal, Pencil, Trash2 } from "@lucide/vue"
+import { MoreHorizontal, Pencil, Trash2 } from "@/components/icons"
 import type { Thread } from "@shared/types"
 import { Button } from "@/components/ui/button"
 import {
@@ -67,8 +67,8 @@ function commitRename() {
         <DropdownMenuTrigger as-child>
           <Button
             variant="ghost"
-            size="icon"
-            class="absolute top-1/2 right-1 size-6 -translate-y-1/2 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+            size="icon-xs"
+            class="absolute top-1/2 right-1 -translate-y-1/2 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
             :aria-label="`Actions for ${thread.title}`"
             @click.stop
           >

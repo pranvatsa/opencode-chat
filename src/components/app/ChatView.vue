@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue"
-import { ChevronDown, Menu, MessageSquare, TriangleAlert } from "@lucide/vue"
+import { ChevronDown, Menu, MessageSquare, TriangleAlert } from "@/components/icons"
 import type { Message, Thread } from "@shared/types"
 import { MODELS } from "@/lib/mock"
 import { Button } from "@/components/ui/button"
@@ -49,7 +49,7 @@ watch(
 <template>
   <main class="flex min-w-0 flex-1 flex-col">
     <header class="flex h-14 shrink-0 items-center gap-2 border-b px-4">
-      <Button variant="ghost" size="icon" class="size-8 md:hidden" aria-label="Open chats" @click="emit('open-sidebar')">
+      <Button variant="ghost" size="icon" class="md:hidden" aria-label="Open chats" @click="emit('open-sidebar')">
         <Menu class="size-4" />
       </Button>
       <h1 class="truncate text-sm font-medium">{{ thread?.title ?? "opencode-chat" }}</h1>

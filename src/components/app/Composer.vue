@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue"
-import { ArrowUp, Square } from "@lucide/vue"
+import { ArrowUp, Square } from "@/components/icons"
 import { Button } from "@/components/ui/button"
 
 const props = defineProps<{ disabled?: boolean; streaming?: boolean }>()
@@ -55,13 +55,13 @@ function onKeydown(event: KeyboardEvent) {
         type="button"
         size="icon"
         variant="secondary"
-        class="size-8 shrink-0"
+        class="shrink-0"
         aria-label="Stop generating"
         @click="emit('stop')"
       >
         <Square class="size-3.5" />
       </Button>
-      <Button v-else type="submit" size="icon" class="size-8 shrink-0" aria-label="Send message" :disabled="disabled || !value.trim()">
+      <Button v-else type="submit" size="icon" class="shrink-0" aria-label="Send message" :disabled="disabled || !value.trim()">
         <ArrowUp class="size-4" />
       </Button>
     </div>

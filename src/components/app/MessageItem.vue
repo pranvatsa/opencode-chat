@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue"
-import { Check, Copy } from "@lucide/vue"
+import { Check, Copy } from "@/components/icons"
 import type { Message } from "@shared/types"
 import { Button } from "@/components/ui/button"
 import MarkdownContent from "./MarkdownContent.vue"
@@ -28,8 +28,8 @@ async function copy() {
       <Button
         v-if="message.role === 'assistant' && message.content"
         variant="ghost"
-        size="icon"
-        class="ml-auto size-7 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
+        size="icon-sm"
+        class="ml-auto opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
         aria-label="Copy message"
         @click="copy"
       >

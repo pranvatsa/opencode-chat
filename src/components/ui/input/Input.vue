@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
-import { useVModel } from '@vueuse/core'
+import { useVModel } from '@/lib/vue-utils'
 import { cn } from '@/lib/utils'
 
 const props = defineProps<{

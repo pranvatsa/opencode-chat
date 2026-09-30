@@ -1,0 +1,9 @@
+# Copy to .dev.vars for local `astro dev`. Never commit .dev.vars.
+# In production set these as Worker secrets: `npx wrangler secret put <name>`.
+
+# OpenCode Go API key from https://opencode.ai/console
+OPENCODE_GO_API_KEY="replace-me"
+
+# Optional: override the upstream base (default https://opencode.ai/zen/go/v1).
+# Point this at a local mock to develop without a key.
+# OPENCODE_GO_BASE_URL="http://127.0.0.1:9099/v1"

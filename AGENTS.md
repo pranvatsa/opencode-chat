@@ -25,12 +25,16 @@ Spec and plans live in `../.plans/opencode-chat/` and are never committed.
 
 Canonical layout; create each directory as the code lands:
 
-- `src/pages/` — Astro routes; `src/pages/api/` files are the Worker API.
+- `src/pages/` — Astro routes; `src/pages/api/` files are the Worker API
+  (`models` proxy, `chat` SSE proxy).
 - `src/layouts/` — Astro page shells (head, theme, PWA meta).
 - `src/components/` — shadcn-vue primitives plus app components (sidebar, chat, composer).
-- `src/lib/` — client helpers: API client, SSE reader, markdown render.
-- `src/server/` — D1 queries, Access JWT verification, OpenCode Go client.
-- `shared/` — types imported by both the UI and the endpoints.
+- `src/lib/` — client helpers (API client, markdown) and server helpers
+  (`upstream.ts` reads env and calls the Go API). D1 queries will live in
+  `src/server/`.
+- `src/middleware.ts` — cross-cutting only: security headers, and Cloudflare
+  Access JWT verification once Access is enabled.
+- `shared/` — types and zod schemas imported by both the UI and the endpoints.
 - The UI calls same-origin `/api/*` only. The Go API key is a Worker secret and
   never reaches the browser.
 
@@ -50,6 +54,18 @@ Canonical layout; create each directory as the code lands:
 
 ## Non-obvious constraints
 
+- Bindings and secrets come from `import { env } from "cloudflare:workers"`.
+  `Astro.locals.runtime.env` was removed in Astro 6+; do not use it.
+- `cn` (`src/lib/utils.ts`) does **not** resolve conflicting Tailwind
+  utilities. Do not override a component's default utility via `class`; use or
+  add a variant instead. There is no `clsx`/`tailwind-merge`.
+- `shared/schemas.ts` is server-only (imports `zod`). Keep `shared/api.ts`
+  type-only so `zod` stays out of the client bundle.
+- Icons live in `src/components/icons.ts` (hand-inlined SVGs). Add to that file,
+  do not add an icon dependency.
+- `src/styles/vendor/shadcn.css` is vendored from shadcn-vue (MIT) so the
+  vulnerable CLI package is not a dependency. Re-copy it only on a deliberate
+  upgrade.
 - Dark mode is class-driven: `src/styles/global.css` sets
   `@custom-variant dark (&:is(.dark *));` and `<html class="dark">` in
   `src/layouts/Base.astro` turns it on. Drop the variant to fall back to
