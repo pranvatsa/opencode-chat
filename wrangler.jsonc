@@ -2,7 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "opencode-chat",
   "compatibility_date": "2026-09-30",
-  "workers_dev": true,
+  "workers_dev": false,
   // Preview URLs are extra public hostnames that bypass the Access app.
   "preview_urls": false,
   "d1_databases": [
