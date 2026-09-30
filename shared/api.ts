@@ -30,21 +30,14 @@ export interface UpdateThreadInput {
   model?: string
 }
 
-export interface ChatMessage {
-  role: "user" | "assistant"
-  content: string
-}
-
 export interface ChatRequest {
-  model: string
-  session: string
-  messages: ChatMessage[]
+  threadId: string
+  text: string
 }
 
 /**
- * The UI codes against this contract. The mock implements it now; the Worker
- * implements the same surface later, so swapping is a one-file change. Keep it
- * to what the app actually uses — every field is a promise. See Hyrum's Law.
+ * The UI codes against this contract; the Worker implements it. Keep it to
+ * what the app actually uses — every field is a promise. See Hyrum's Law.
  */
 export interface ChatApi {
   listThreads(): Promise<Thread[]>
@@ -52,9 +45,10 @@ export interface ChatApi {
   updateThread(id: string, input: UpdateThreadInput): Promise<Thread>
   deleteThread(id: string): Promise<void>
   listMessages(threadId: string): Promise<Message[]>
-  appendMessage(threadId: string, content: string): Promise<Message>
-  streamReply(
+  /** Sends a user message; the server persists it and the assistant reply. */
+  sendMessage(
     threadId: string,
+    text: string,
     onDelta: (chunk: string) => void,
     signal?: AbortSignal,
   ): Promise<void>

@@ -5,27 +5,26 @@ import { z } from "zod"
  * run on the server, so `zod` never reaches the browser bundle.
  */
 
-const SESSION_ID = /^[A-Za-z0-9._:-]{1,128}$/
-const MAX_TOTAL_CONTENT = 200_000
+const ID = /^[A-Za-z0-9_-]{1,64}$/
 
-export const ChatRequestSchema = z
+export const CreateThreadInputSchema = z.object({
+  model: z.string().min(1).max(120),
+  title: z.string().trim().min(1).max(120).optional(),
+})
+
+export const UpdateThreadInputSchema = z
   .object({
-    // A session id is interpolated into a request header upstream, so it must
-    // be a safe token — never free text.
-    session: z.string().regex(SESSION_ID, "invalid session id"),
-    model: z.string().min(1).max(120),
-    messages: z
-      .array(
-        z.object({
-          role: z.enum(["user", "assistant"]),
-          content: z.string().min(1).max(24000),
-        }),
-      )
-      .min(1)
-      .max(200),
+    title: z.string().trim().min(1).max(120).optional(),
+    model: z.string().min(1).max(120).optional(),
   })
-  .refine((value) => value.messages.reduce((total, message) => total + message.content.length, 0) <= MAX_TOTAL_CONTENT, {
-    message: "conversation too large",
+  .refine((value) => value.title !== undefined || value.model !== undefined, {
+    message: "provide at least one field to update",
   })
+
+export const ChatRequestSchema = z.object({
+  // Interpolated into an upstream request header, so it must be a safe token.
+  threadId: z.string().regex(ID, "invalid thread id"),
+  text: z.string().trim().min(1).max(24000),
+})
 
 export type ChatRequestInput = z.infer<typeof ChatRequestSchema>

@@ -1,12 +1,5 @@
 import type { Message, Thread } from "@shared/types"
-import type {
-  ApiErrorCode,
-  ChatApi,
-  ChatRequest,
-  CreateThreadInput,
-  UpdateThreadInput,
-} from "@shared/api"
-import { MOCK_MESSAGES, MOCK_THREADS } from "./mock"
+import type { ApiErrorBody, ApiErrorCode, ChatApi, ChatRequest } from "@shared/api"
 
 export class ApiError extends Error {
   constructor(
@@ -19,101 +12,47 @@ export class ApiError extends Error {
   }
 }
 
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
+async function request<T>(input: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(input, init)
+  if (!response.ok) {
+    let code: ApiErrorCode = "INTERNAL"
+    let message = `Request failed (${response.status}).`
+    try {
+      const body = (await response.json()) as ApiErrorBody
+      code = body.error.code
+      message = body.error.message
+    } catch {
+      // non-JSON error body; keep the default message
+    }
+    throw new ApiError(code, message, response.status)
+  }
+  if (response.status === 204) return undefined as T
+  return (await response.json()) as T
 }
 
-function createStore() {
+function jsonInit(method: string, body?: unknown): RequestInit {
   return {
-    threads: [...MOCK_THREADS],
-    messages: Object.fromEntries(Object.entries(MOCK_MESSAGES).map(([id, list]) => [id, [...list]])),
+    method,
+    headers: { "content-type": "application/json" },
+    body: body === undefined ? undefined : JSON.stringify(body),
   }
 }
 
-const store = createStore()
-
-/**
- * Temporary client-side `ChatApi`. Threads live in memory until D1 lands;
- * `streamReply` already talks to the real `/api/chat` proxy.
- */
-export function createMockApi(): ChatApi {
+/** Talks to the Worker API. Nothing here knows about the model provider. */
+export function createApi(): ChatApi {
   return {
-    async listThreads(): Promise<Thread[]> {
-      await sleep(140)
-      return [...store.threads]
-    },
+    listThreads: () => request<Thread[]>("/api/threads"),
+    createThread: (input) => request<Thread>("/api/threads", jsonInit("POST", input)),
+    updateThread: (id, input) => request<Thread>(`/api/threads/${id}`, jsonInit("PATCH", input)),
+    deleteThread: (id) => request<void>(`/api/threads/${id}`, { method: "DELETE" }),
+    listMessages: (threadId) => request<Message[]>(`/api/threads/${threadId}/messages`),
 
-    async createThread(input: CreateThreadInput): Promise<Thread> {
-      if (!input.model) throw new ApiError("VALIDATION_ERROR", "model is required.", 422)
-      await sleep(80)
-      const thread: Thread = {
-        id: crypto.randomUUID(),
-        title: input.title?.trim() || "New chat",
-        model: input.model,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      }
-      store.threads = [thread, ...store.threads]
-      store.messages[thread.id] = []
-      return thread
-    },
-
-    async updateThread(id: string, input: UpdateThreadInput): Promise<Thread> {
-      if (input.title === undefined && input.model === undefined) {
-        throw new ApiError("VALIDATION_ERROR", "provide at least one field to update.", 422)
-      }
-      const thread = store.threads.find((item) => item.id === id)
-      if (!thread) throw new ApiError("NOT_FOUND", "Chat not found.", 404)
-      const updated: Thread = { ...thread, ...input, updatedAt: Date.now() }
-      store.threads = store.threads.map((item) => (item.id === id ? updated : item))
-      return updated
-    },
-
-    async deleteThread(id: string): Promise<void> {
-      if (!store.threads.some((item) => item.id === id)) {
-        throw new ApiError("NOT_FOUND", "Chat not found.", 404)
-      }
-      store.threads = store.threads.filter((item) => item.id !== id)
-      delete store.messages[id]
-    },
-
-    async listMessages(threadId: string): Promise<Message[]> {
-      await sleep(90)
-      const stored = store.messages[threadId]
-      if (!stored) throw new ApiError("NOT_FOUND", "Chat not found.", 404)
-      return [...stored]
-    },
-
-    async appendMessage(threadId: string, content: string): Promise<Message> {
-      const text = content.trim()
-      if (!text) throw new ApiError("VALIDATION_ERROR", "content is required.", 422)
-      const list = store.messages[threadId]
-      if (!list) throw new ApiError("NOT_FOUND", "Chat not found.", 404)
-      const message: Message = { id: crypto.randomUUID(), role: "user", content: text, createdAt: Date.now() }
-      list.push(message)
-      return message
-    },
-
-    async streamReply(threadId: string, onDelta, signal?: AbortSignal): Promise<void> {
-      const thread = store.threads.find((item) => item.id === threadId)
-      const history = store.messages[threadId]
-      if (!thread || !history) throw new ApiError("NOT_FOUND", "Chat not found.", 404)
-
-      const messages = history
-        .filter((message) => message.content.trim() !== "")
-        .map((message) => ({ role: message.role, content: message.content }))
-      if (!messages.length) throw new ApiError("CONFLICT", "No message to reply to.", 409)
-
-      const body: ChatRequest = { model: thread.model, session: threadId, messages }
+    async sendMessage(threadId, text, onDelta, signal) {
+      const body: ChatRequest = { threadId, text }
 
       let response: Response
       try {
-        response = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify(body),
-          signal,
-        })
+        response = await fetch("/api/chat", { ...jsonInit("POST", body), signal })
       } catch (cause) {
         // Aborts are a normal stop, not a failure — let the caller see them.
         if (signal?.aborted) throw cause

@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue"
 import type { Message, Thread } from "@shared/types"
-import { ApiError, createMockApi } from "@/lib/api"
+import { ApiError, createApi } from "@/lib/api"
 import AppSidebar from "./AppSidebar.vue"
 import ChatView from "./ChatView.vue"
 
 const DEFAULT_MODEL = "deepseek-v4.1-flash"
-const api = createMockApi()
+const api = createApi()
 
 const threads = ref<Thread[]>([])
 const messages = ref<Record<string, Message[]>>({})
@@ -123,16 +123,15 @@ async function send(text: string) {
   controller = new AbortController()
   streamThreadId = thread.id
 
+  const list = messages.value[thread.id] ?? (messages.value[thread.id] = [])
+  list.push({ id: crypto.randomUUID(), role: "user", content: text, createdAt: Date.now() })
+
+  // Reactive so streaming mutations re-render; a plain object would not.
+  const reply = reactive<Message>({ id: crypto.randomUUID(), role: "assistant", content: "", createdAt: Date.now() })
+  list.push(reply)
+
   try {
-    const user = await api.appendMessage(thread.id, text)
-    const list = messages.value[thread.id] ?? (messages.value[thread.id] = [])
-    list.push(user)
-
-    // Reactive so streaming mutations re-render; a plain object would not.
-    const reply = reactive<Message>({ id: crypto.randomUUID(), role: "assistant", content: "", createdAt: Date.now() })
-    list.push(reply)
-
-    await api.streamReply(thread.id, (chunk) => (reply.content += chunk), controller.signal)
+    await api.sendMessage(thread.id, text, (chunk) => (reply.content += chunk), controller.signal)
 
     if (thread.title === "New chat") {
       const updated = await api.updateThread(thread.id, { title: text.slice(0, 48) })

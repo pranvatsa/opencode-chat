@@ -8,6 +8,7 @@ toolchain, and shared commit/comment rules) before changing this repo.
 
 ```sh
 npm install
+npx wrangler d1 migrations apply opencode-chat --local
 npm run dev      # astro dev, http://localhost:4321
 npm run check    # astro check (types and .astro)
 npm run build    # astro build -> dist/
@@ -31,13 +32,17 @@ Canonical layout; create each directory as the code lands:
 - `src/components/` — shadcn-vue primitives plus app components (sidebar, chat, composer).
 - `src/lib/` — client helpers (`api.ts`), server helpers (`http.ts`,
   `upstream.ts` reads env), and local replacements for removed deps. Markdown
-  rendering lives in `src/components/app/MarkdownContent.vue`. D1 queries will
-  live in `src/server/`.
+  rendering lives in `src/components/app/MarkdownContent.vue`.
+- `src/server/` — D1 queries (`threads.ts`).
 - `src/middleware.ts` — cross-cutting only: verifies the Cloudflare Access JWT
   for `/api/*` (fails closed in production when unconfigured) and sets security
   headers.
 - `shared/` — types shared by the UI and the endpoints. `shared/schemas.ts`
   (zod) is server-only.
+- `migrations/` — D1 schema. Apply locally with
+  `npx wrangler d1 migrations apply opencode-chat --local`.
+- `POST /api/chat` loads history from D1, persists the user message, streams the
+  reply, and persists the assistant message when the stream ends.
 - The UI calls same-origin `/api/*` only. The Go API key is a Worker secret and
   never reaches the browser.
 
@@ -59,6 +64,8 @@ Canonical layout; create each directory as the code lands:
 
 - Bindings and secrets come from `import { env } from "cloudflare:workers"`.
   `Astro.locals.runtime.env` was removed in Astro 6+; do not use it.
+- The D1 binding `DB` is declared in `wrangler.jsonc`; the Cloudflare adapter
+  merges it into the generated `dist/server/wrangler.json`.
 - `cn` (`src/lib/utils.ts`) does **not** resolve conflicting Tailwind
   utilities. Do not override a component's default utility via `class`; use or
   add a variant instead. There is no `clsx`/`tailwind-merge`.

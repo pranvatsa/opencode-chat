@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "opencode-chat",
+  "compatibility_date": "2026-09-30",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "opencode-chat",
+      // Create the database with `npx wrangler d1 create opencode-chat` and
+      // paste the returned id here. Local dev uses an on-disk copy, so a
+      // placeholder is fine until you deploy.
+      "database_id": "00000000-0000-0000-0000-000000000000"
+    }
+  ]
+}

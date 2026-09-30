@@ -1,7 +1,15 @@
-// `cloudflare:workers` is a virtual module provided by the Workers runtime.
-// This declaration covers the parts we use; add bindings here as they appear.
-declare module "cloudflare:workers" {
-  export const env: Record<string, unknown>
+/// <reference types="@cloudflare/workers-types" />
+
+// Bindings for the Workers runtime. workers-types types `cloudflare:workers`
+// `env` as `Cloudflare.Env`, so bindings are declared here.
+declare namespace Cloudflare {
+  interface Env {
+    DB: D1Database
+    OPENCODE_GO_API_KEY?: string
+    OPENCODE_GO_BASE_URL?: string
+    CF_ACCESS_TEAM_DOMAIN?: string
+    CF_ACCESS_AUD?: string
+  }
 }
 
 declare namespace App {
