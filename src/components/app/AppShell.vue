@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from "vue"
-import type { Message, Thread } from "@shared/types"
+import type { Message, Model, Thread } from "@shared/types"
 import { ApiError, createApi } from "@/lib/api"
+import { FALLBACK_MODELS } from "@/lib/models"
 import AppSidebar from "./AppSidebar.vue"
 import ChatView from "./ChatView.vue"
 
 const DEFAULT_MODEL = "deepseek-v4.1-flash"
 const api = createApi()
 
+const models = ref<Model[]>(FALLBACK_MODELS)
 const threads = ref<Thread[]>([])
 const messages = ref<Record<string, Message[]>>({})
 const activeId = ref<string | null>(null)
@@ -55,6 +57,14 @@ async function select(id: string) {
 }
 
 onMounted(async () => {
+  void api
+    .listModels()
+    .then((list) => {
+      if (list.length) models.value = list
+    })
+    .catch(() => {
+      // keep the fallback list
+    })
   try {
     threads.value = await api.listThreads()
     await activate(threads.value[0]?.id ?? null)
@@ -232,6 +242,7 @@ onUnmounted(() => {
       class="flex min-w-0 flex-1 flex-col"
       :thread="activeThread"
       :messages="activeMessages"
+      :models="models"
       :streaming="streaming"
       :loading="loading || messagesLoading"
       :error="error"

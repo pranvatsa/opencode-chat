@@ -1,5 +1,6 @@
-import type { Message, Thread } from "@shared/types"
+import type { Message, Model, Thread } from "@shared/types"
 import type { ApiErrorBody, ApiErrorCode, ChatApi, ChatRequest } from "@shared/api"
+import { labelFor } from "./models"
 
 export class ApiError extends Error {
   constructor(
@@ -41,6 +42,16 @@ function jsonInit(method: string, body?: unknown): RequestInit {
 /** Talks to the Worker API. Nothing here knows about the model provider. */
 export function createApi(): ChatApi {
   return {
+    async listModels(): Promise<Model[]> {
+      const body = await request<{ data?: Array<{ id?: string } | string> } | Array<{ id?: string }>>(
+        "/api/models",
+      )
+      const items = Array.isArray(body) ? body : (body.data ?? [])
+      return items
+        .map((item) => (typeof item === "string" ? item : (item?.id ?? "")))
+        .filter((id): id is string => Boolean(id))
+        .map((id) => ({ id, label: labelFor(id) }))
+    },
     listThreads: () => request<Thread[]>("/api/threads"),
     createThread: (input) => request<Thread>("/api/threads", jsonInit("POST", input)),
     updateThread: (id, input) => request<Thread>(`/api/threads/${id}`, jsonInit("PATCH", input)),

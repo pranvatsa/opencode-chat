@@ -51,10 +51,22 @@ async function requireAuth(context: APIContext): Promise<Response | null> {
       audience,
     })
     context.locals.user = { email: typeof payload.email === "string" ? payload.email : undefined }
-    return null
   } catch {
     return jsonError("UNAUTHORIZED", "Invalid credentials.", 401)
   }
+
+  // Expensive route: throttle per user. Best-effort — never block on limiter
+  // trouble.
+  if (context.url.pathname === "/api/chat") {
+    try {
+      const { success } = await env.CHAT_RATE_LIMITER.limit({ key: context.locals.user?.email ?? "anonymous" })
+      if (!success) return jsonError("RATE_LIMITED", "Too many requests. Slow down.", 429)
+    } catch (cause) {
+      console.error("rate limiter unavailable", cause)
+    }
+  }
+
+  return null
 }
 
 export const onRequest = defineMiddleware(async (context, next) => {

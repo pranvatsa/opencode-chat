@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from "vue"
 import { ChevronDown, Menu, MessageSquare, TriangleAlert } from "@/components/icons"
-import type { Message, Thread } from "@shared/types"
-import { MODELS } from "@/lib/models"
+import type { Message, Model, Thread } from "@shared/types"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -17,6 +16,7 @@ import Composer from "./Composer.vue"
 const props = defineProps<{
   thread: Thread | null
   messages: Message[]
+  models: Model[]
   streaming: boolean
   loading: boolean
   error: string | null
@@ -32,7 +32,7 @@ const emit = defineEmits<{
 const scroller = ref<HTMLElement | null>(null)
 const modelLabel = computed(() => {
   const id = props.thread?.model
-  return MODELS.find((model) => model.id === id)?.label ?? id ?? ""
+  return props.models.find((model) => model.id === id)?.label ?? id ?? ""
 })
 const status = computed(() => (props.streaming ? "Assistant is responding" : ""))
 
@@ -77,7 +77,7 @@ watch(
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" class="w-52">
-          <DropdownMenuItem v-for="model in MODELS" :key="model.id" @select="emit('set-model', model.id)">
+          <DropdownMenuItem v-for="model in models" :key="model.id" @select="emit('set-model', model.id)">
             {{ model.label }}
           </DropdownMenuItem>
         </DropdownMenuContent>

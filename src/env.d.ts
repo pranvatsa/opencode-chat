@@ -5,6 +5,7 @@
 declare namespace Cloudflare {
   interface Env {
     DB: D1Database
+    CHAT_RATE_LIMITER: RateLimit
     OPENCODE_GO_API_KEY?: string
     OPENCODE_GO_BASE_URL?: string
     CF_ACCESS_TEAM_DOMAIN?: string

@@ -4,6 +4,19 @@ Lean chat UI for OpenCode Go models. Astro + Vue on Cloudflare Workers. $0.
 Read `../AGENTS.md` (workspace) and `first-rule-of-dotfiles/AGENTS.md` (machine,
 toolchain, and shared commit/comment rules) before changing this repo.
 
+## Skills
+
+Load the matching skill before the work, not after:
+
+- Any Cloudflare work (Workers, D1, Access, rate limiting, wrangler, deploy):
+  use the Cloudflare skills installed from
+  <https://github.com/cloudflare/skills> (`cloudflare`, `wrangler`,
+  `durable-objects`, …). Verify limits, pricing, and APIs against the official
+  docs at <https://developers.cloudflare.com/> — do not rely on a same-named
+  skill from any other source.
+- Any OpenCode work (the model API, Go endpoints, server): use the built-in
+  `opencode` skill and treat <https://opencode.ai/v2/docs/> as the source of truth.
+
 ## Commands
 
 ```sh

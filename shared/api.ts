@@ -1,9 +1,10 @@
-import type { Message, Thread } from "./types"
+import type { Message, Model, Thread } from "./types"
 
 /** Every error response uses this shape. See api-and-interface-design. */
 export const API_ERROR_CODES = [
   "VALIDATION_ERROR",
   "UNAUTHORIZED",
+  "RATE_LIMITED",
   "NOT_FOUND",
   "CONFLICT",
   "UPSTREAM_ERROR",
@@ -40,6 +41,7 @@ export interface ChatRequest {
  * what the app actually uses — every field is a promise. See Hyrum's Law.
  */
 export interface ChatApi {
+  listModels(): Promise<Model[]>
   listThreads(): Promise<Thread[]>
   createThread(input: CreateThreadInput): Promise<Thread>
   updateThread(id: string, input: UpdateThreadInput): Promise<Thread>

@@ -11,5 +11,16 @@
       // placeholder is fine until you deploy.
       "database_id": "00000000-0000-0000-0000-000000000000"
     }
+  ],
+  "ratelimits": [
+    {
+      "name": "CHAT_RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": {
+        // 30 chat requests per minute, per user, per Cloudflare location.
+        "limit": 30,
+        "period": 60
+      }
+    }
   ]
 }

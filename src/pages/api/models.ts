@@ -17,6 +17,11 @@ export const GET: APIRoute = async () => {
     return jsonError("UPSTREAM_ERROR", "Could not reach the model catalog.", 502)
   }
 
+  if (!response.ok) {
+    console.error(`upstream models failed: ${response.status}`)
+    return jsonError("UPSTREAM_ERROR", `Model catalog failed (${response.status}).`, 502)
+  }
+
   return new Response(response.body, {
     status: response.status,
     headers: {
