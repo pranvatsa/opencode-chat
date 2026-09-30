@@ -1,0 +1,78 @@
+# AGENTS.md — opencode-chat
+
+Lean chat UI for OpenCode Go models. Astro + Vue on Cloudflare Workers. $0.
+Read `../AGENTS.md` (workspace) and `first-rule-of-dotfiles/AGENTS.md` (machine,
+toolchain, and shared commit/comment rules) before changing this repo.
+
+## Commands
+
+```sh
+npm install
+npm run dev      # astro dev, http://localhost:4321
+npm run check    # astro check (types and .astro)
+npm run build    # astro build -> dist/
+npm run preview  # build, then serve the real workerd output
+npm run deploy   # build, then wrangler deploy
+```
+
+## Stack
+
+Astro 7 (server output) · Vue 3.5 · Tailwind 4 · shadcn-vue (Reka UI) ·
+`@astrojs/cloudflare` · Cloudflare D1 · Cloudflare Access (GitHub) for auth.
+Spec and plans live in `../.plans/opencode-chat/` and are never committed.
+
+## Architecture
+
+Canonical layout; create each directory as the code lands:
+
+- `src/pages/` — Astro routes; `src/pages/api/` files are the Worker API.
+- `src/layouts/` — Astro page shells (head, theme, PWA meta).
+- `src/components/` — shadcn-vue primitives plus app components (sidebar, chat, composer).
+- `src/lib/` — client helpers: API client, SSE reader, markdown render.
+- `src/server/` — D1 queries, Access JWT verification, OpenCode Go client.
+- `shared/` — types imported by both the UI and the endpoints.
+- The UI calls same-origin `/api/*` only. The Go API key is a Worker secret and
+  never reaches the browser.
+
+## Vue UI conventions
+
+- Composition API with `<script setup>`; typed `defineProps`/`defineEmits`.
+- Composition over configuration; one component, one job; split data containers
+  from presentational components; no prop drilling past ~3 levels; keep
+  components under ~200 lines.
+- Accessibility (WCAG 2.1 AA): every control keyboard-operable and labelled,
+  focus managed on open/close, never colour alone for state.
+- Every async view has loading (skeleton), empty, and error states.
+- Tailwind design tokens and a consistent spacing scale; no arbitrary pixel
+  values; mobile-first, check 320 / 768 / 1024 / 1440.
+- No "AI aesthetic": no default purple/indigo, no gradient-heavy surfaces, no
+  rounded-everything, no stock card grids. It should look deliberately designed.
+
+## Non-obvious constraints
+
+- Tailwind 4 dark mode is `prefers-color-scheme` by default. The class strategy
+  needs `@custom-variant dark (&:where(.dark, .dark *));` in
+  `src/styles/global.css`; until then `<html class="dark">` does nothing.
+- `imageService: "passthrough"` in `astro.config.mjs` is deliberate. The default
+  turns on the Cloudflare Images binding, which can cost money. Do not revert it.
+- `wrangler` runs against the adapter-generated `dist/server/wrangler.json`, so
+  build before deploying. The npm scripts already do.
+- The adapter auto-adds a `SESSION` KV binding. We do not use Astro sessions.
+- Sanitize model output with DOMPurify before rendering. Never `v-html`
+  unsanitized content.
+- Validate every endpoint input with zod.
+
+## Boundaries
+
+- Cloudflare Free only. No Containers, Images, or other paid products.
+- v1 is chat only: no shell/execution, no MCP, no image uploads.
+- Do not add a dependency without flagging it.
+- Never commit specs, plans, `.dev.vars`, or secrets.
+- Keep a `README.md` (working commands only) and a `.node-version`.
+
+## Conventions
+
+- Commit subject: `type: brief imperative`, type in `feat`, `fix`, `docs`,
+  `chore`, `refactor`, `test`, `style`, or `perf`. Never the author's name.
+- One logical change per commit. Keep messages, PRs, and replies brief.
+- Keep comments rare. Delete any that only restates the code.

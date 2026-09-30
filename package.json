@@ -1,0 +1,26 @@
+{
+  "name": "opencode-chat",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro build && wrangler dev --config dist/server/wrangler.json",
+    "check": "astro check",
+    "deploy": "astro build && wrangler deploy --config dist/server/wrangler.json"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "14.3.3",
+    "@astrojs/vue": "7.0.3",
+    "@tailwindcss/vite": "4.3.3",
+    "astro": "7.3.5",
+    "tailwindcss": "4.3.3",
+    "vue": "3.5.43"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.144.0"
+  }
+}
